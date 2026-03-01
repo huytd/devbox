@@ -13,13 +13,30 @@ pub fn up() -> Result<()> {
     let backend_type = BackendType::detect();
     let backend = backend_type.create_backend();
 
+    // Check backend availability
+    if !backend.check_available() {
+        anyhow::bail!(
+            "Backend '{}' is not available. Please install Docker or Lima.",
+            match backend_type {
+                BackendType::Docker => "Docker",
+                BackendType::Lima => "Lima",
+            }
+        );
+    }
+
     // Check if config exists
     let config = if DevBoxConfig::exists(Path::new(path)) {
         DevBoxConfig::load(Path::new(path))
             .context("Failed to load existing devbox config")?
     } else {
+        println!("Devbox backend: {}", match backend_type {
+            BackendType::Docker => "Docker",
+            BackendType::Lima => "Lima",
+        });
         // Create new config
         let new_config = DevBoxConfig::new(path, backend_type);
+        println!("Container: {}", new_config.container_name);
+        println!("Volume: {}", new_config.volume_name);
         new_config.save(Path::new(path))
             .context("Failed to save new devbox config")?;
         new_config
