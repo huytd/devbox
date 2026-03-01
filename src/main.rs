@@ -1,6 +1,10 @@
 use clap::{Parser, Subcommand};
 use anyhow::Result;
 
+mod config;
+mod backend;
+mod commands;
+
 #[derive(Parser)]
 #[command(name = "devbox")]
 #[command(about = "Create and manage isolated dev environments")]
@@ -22,20 +26,8 @@ enum Commands {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Up => up(),
-        Commands::Down => down(),
-        Commands::Destroy => destroy(),
+        Commands::Up => commands::up(),
+        Commands::Down => commands::down(),
+        Commands::Destroy => commands::destroy(),
     }
-}
-
-fn up() -> Result<()> {
-    todo!()
-}
-
-fn down() -> Result<()> {
-    todo!()
-}
-
-fn destroy() -> Result<()> {
-    todo!()
 }
