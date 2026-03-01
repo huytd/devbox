@@ -63,15 +63,17 @@ impl DevEnvBackend for DockerBackend {
             .args(["volume", "create", &config.volume_name])
             .output()?;
 
-        // Run container in detached mode with volume mount
+        // Run container in detached mode with volume mount and port exposure
+        // Keep container running by using a long-running process
         std::process::Command::new("docker")
             .args([
                 "run", "-d",
                 "--name", &config.container_name,
-                "-v", &format!("{}:/workspaces", config.volume_name),
+                "-p", "3000:3000",
+                "-v", &format!("{}:/workspaces", config.absolute_path),
                 "-w", "/workspaces",
                 "ubuntu:latest",
-                "bash", "--login"
+                "tail", "-f", "/dev/null"
             ])
             .output()?;
 
