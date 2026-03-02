@@ -49,8 +49,7 @@ pub fn up() -> Result<()> {
             .context("Failed to create container")?;
     } else if !backend.is_container_running(&config) {
         println!("Starting existing devbox...");
-        backend.stop_container(&config).ok(); // Ensure clean state first
-        backend.create_container(&config)
+        backend.start_container(&config)
             .context("Failed to start container")?;
     }
 

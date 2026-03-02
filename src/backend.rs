@@ -4,6 +4,7 @@ use anyhow::Result;
 pub trait DevEnvBackend: Send + Sync {
     fn check_available(&self) -> bool;
     fn create_container(&self, config: &DevBoxConfig) -> Result<()>;
+    fn start_container(&self, config: &DevBoxConfig) -> Result<()>;
     fn attach_container(&self, config: &DevBoxConfig) -> Result<()>;
     fn stop_container(&self, config: &DevBoxConfig) -> Result<()>;
     fn container_exists(&self, config: &DevBoxConfig) -> bool;
@@ -50,11 +51,11 @@ impl DevEnvBackend for DockerBackend {
 
     fn is_container_running(&self, config: &DevBoxConfig) -> bool {
         let output = std::process::Command::new("docker")
-            .args(["ps", "--filter", &format!("name={}", config.container_name)])
+            .args(["ps", "--filter", &format!("name={}", config.container_name), "--format", "{{.Names}}"])
             .output()
             .expect("Failed to execute docker command");
 
-        !String::from_utf8_lossy(&output.stdout).trim().is_empty()
+        String::from_utf8_lossy(&output.stdout).trim() == config.container_name
     }
 
     fn create_container(&self, config: &DevBoxConfig) -> Result<()> {
@@ -76,6 +77,23 @@ impl DevEnvBackend for DockerBackend {
                 "tail", "-f", "/dev/null"
             ])
             .output()?;
+
+        Ok(())
+    }
+
+    fn start_container(&self, config: &DevBoxConfig) -> Result<()> {
+        // Start existing stopped container
+        std::process::Command::new("docker")
+            .args(["start", &config.container_name])
+            .output()?;
+
+        // Wait for container to be running (up to 3 seconds)
+        for _ in 0..30 {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            if self.is_container_running(config) {
+                break;
+            }
+        }
 
         Ok(())
     }
@@ -127,11 +145,11 @@ impl DevEnvBackend for LimaBackend {
 
     fn is_container_running(&self, config: &DevBoxConfig) -> bool {
         let output = std::process::Command::new("limactl")
-            .args(["shell", "default", "docker", "ps", "--filter", &format!("name={}", config.container_name)])
+            .args(["shell", "default", "docker", "ps", "--filter", &format!("name={}", config.container_name), "--format", "{{.Names}}"])
             .output()
             .expect("Failed to execute limactl command");
 
-        !String::from_utf8_lossy(&output.stdout).trim().is_empty()
+        String::from_utf8_lossy(&output.stdout).trim() == config.container_name
     }
 
     fn create_container(&self, config: &DevBoxConfig) -> Result<()> {
@@ -153,6 +171,25 @@ impl DevEnvBackend for LimaBackend {
                 "bash", "--login"
             ])
             .output()?;
+
+        Ok(())
+    }
+
+    fn start_container(&self, config: &DevBoxConfig) -> Result<()> {
+        // Start existing stopped container inside Lima VM
+        std::process::Command::new("limactl")
+            .args([
+                "shell", "default", "docker", "start", &config.container_name
+            ])
+            .output()?;
+
+        // Wait for container to be running (up to 3 seconds)
+        for _ in 0..30 {
+            std::thread::sleep(std::time::Duration::from_millis(100));
+            if self.is_container_running(config) {
+                break;
+            }
+        }
 
         Ok(())
     }
