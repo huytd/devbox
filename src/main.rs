@@ -16,7 +16,10 @@ struct Cli {
 #[derive(Subcommand)]
 enum Commands {
     /// Create or attach to a devbox environment
-    Up,
+    Up {
+        #[arg(short = 'p', long = "port", value_name = "HOST:CONTAINER")]
+        ports: Vec<String>,
+    },
     /// Stop the devbox without removing it
     Down,
     /// Destroy the devbox and all associated resources
@@ -26,7 +29,7 @@ enum Commands {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
-        Commands::Up => commands::up(),
+        Commands::Up { ports } => commands::up(ports),
         Commands::Down => commands::down(),
         Commands::Destroy => commands::destroy(),
     }

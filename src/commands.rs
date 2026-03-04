@@ -2,12 +2,19 @@ use crate::config::{DevBoxConfig, BackendType};
 use std::path::Path;
 use anyhow::{Result, Context};
 
-pub fn up() -> Result<()> {
+pub fn up(ports: Vec<String>) -> Result<()> {
     let cwd = std::env::current_dir()
         .context("Failed to get current directory")?;
 
     let path = cwd.to_str()
         .context("Current directory path is not valid UTF-8")?;
+
+    // Use default port if no ports specified
+    let port_mappings = if ports.is_empty() {
+        vec!["3000:3000".to_string()]
+    } else {
+        ports
+    };
 
     // Detect backend
     let backend_type = BackendType::detect();
@@ -35,7 +42,7 @@ pub fn up() -> Result<()> {
     // Check if container exists
     if !backend.container_exists(&config) {
         println!("Creating new devbox for: {}", path);
-        backend.create_container(&config)
+        backend.create_container(&config, &port_mappings)
             .context("Failed to create container")?;
     } else if !backend.is_container_running(&config) {
         println!("Starting existing devbox...");

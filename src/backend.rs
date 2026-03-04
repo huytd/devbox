@@ -3,7 +3,7 @@ use anyhow::Result;
 
 pub trait DevEnvBackend: Send + Sync {
     fn check_available(&self) -> bool;
-    fn create_container(&self, config: &DevBoxConfig) -> Result<()>;
+    fn create_container(&self, config: &DevBoxConfig, ports: &[String]) -> Result<()>;
     fn start_container(&self, config: &DevBoxConfig) -> Result<()>;
     fn attach_container(&self, config: &DevBoxConfig) -> Result<()>;
     fn stop_container(&self, config: &DevBoxConfig) -> Result<()>;
@@ -48,24 +48,30 @@ impl DevEnvBackend for DockerBackend {
         String::from_utf8_lossy(&output.stdout).trim() == config.container_name
     }
 
-    fn create_container(&self, config: &DevBoxConfig) -> Result<()> {
+    fn create_container(&self, config: &DevBoxConfig, ports: &[String]) -> Result<()> {
         // Create named volume
         std::process::Command::new("docker")
             .args(["volume", "create", &config.volume_name])
             .output()?;
 
-        // Run container in detached mode with volume mount and port exposure
-        // Keep container running by using a long-running process
+        let workspace_path = format!("{}:/workspaces", config.absolute_path);
+        let mut args: Vec<&str> = vec![
+            "run", "-d",
+            "--name", &config.container_name,
+            "-v", &workspace_path,
+            "-w", "/workspaces",
+            "ubuntu:latest",
+            "tail", "-f", "/dev/null"
+        ];
+
+        // Add port mappings (order matters - must come before image name)
+        for port in ports {
+            args.push("-p");
+            args.push(port);
+        }
+
         std::process::Command::new("docker")
-            .args([
-                "run", "-d",
-                "--name", &config.container_name,
-                "-p", "3000:3000",
-                "-v", &format!("{}:/workspaces", config.absolute_path),
-                "-w", "/workspaces",
-                "ubuntu:latest",
-                "tail", "-f", "/dev/null"
-            ])
+            .args(&args)
             .output()?;
 
         Ok(())
@@ -124,7 +130,7 @@ mod tests {
 
     #[test]
     fn test_backend_type_detect() {
-        let backend = BackendType::detect();
+        let _backend = BackendType::detect();
         assert!(DockerBackend.check_available());
     }
 
