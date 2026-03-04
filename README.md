@@ -1,6 +1,6 @@
 # DevBox
 
-Create isolated virtual development environments using Docker or Lima.
+Create isolated virtual development environments using Docker.
 
 ## Installation
 
@@ -43,11 +43,9 @@ cargo install --path .
 - `devbox down` - Stop devbox (data persists)
 - `devbox destroy` - Remove devbox completely
 
-## Backend Detection
+## Backend
 
-DevBox automatically detects and uses:
-- **Lima** if `limactl` is available (macOS with stronger isolation)
-- **Docker** otherwise (universal availability)
+DevBox uses Docker for containerization.
 
 ## Configuration
 
@@ -55,5 +53,4 @@ Each project has a `.devbox/config.json` file that stores:
 - Container name (hash-based)
 - Volume name
 - Absolute path
-- Backend type
 - Creation timestamp

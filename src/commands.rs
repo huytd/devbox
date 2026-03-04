@@ -15,13 +15,7 @@ pub fn up() -> Result<()> {
 
     // Check backend availability
     if !backend.check_available() {
-        anyhow::bail!(
-            "Backend '{}' is not available. Please install Docker or Lima.",
-            match backend_type {
-                BackendType::Docker => "Docker",
-                BackendType::Lima => "Lima",
-            }
-        );
+        anyhow::bail!("Backend 'Docker' is not available. Please install Docker.");
     }
 
     // Check if config exists
@@ -29,10 +23,6 @@ pub fn up() -> Result<()> {
         DevBoxConfig::load(Path::new(path))
             .context("Failed to load existing devbox config")?
     } else {
-        println!("Devbox backend: {}", match backend_type {
-            BackendType::Docker => "Docker",
-            BackendType::Lima => "Lima",
-        });
         // Create new config
         let new_config = DevBoxConfig::new(path, backend_type);
         println!("Container: {}", new_config.container_name);

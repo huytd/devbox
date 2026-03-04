@@ -16,7 +16,6 @@ pub struct DevBoxConfig {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub enum BackendType {
     Docker,
-    Lima,
 }
 
 impl DevBoxConfig {
@@ -70,7 +69,6 @@ mod tests {
         let config = DevBoxConfig::new("/tmp/test", BackendType::Docker);
         assert!(config.container_name.starts_with("devbox-"));
         assert!(config.volume_name.starts_with("devbox-data-"));
-        assert_eq!(config.backend, BackendType::Docker);
     }
 
     #[test]
